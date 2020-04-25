@@ -9,7 +9,7 @@ var addminRouter = require('./routes/admin.router');
 
 
 var app = express();
-var port = 1224;
+var port = 1226;
 app.set('view engine', 'pug');
 app.set('views', './views');
 
@@ -219,13 +219,16 @@ app.get('/Suabook',function(req, res, next){
     sql.connect(config, function(err){
         if(err) throw err;
         var bookname = req.query.book;
-        var bookName = "SELECT * FROM Sach WHERE TenSach LIKE N'"+bookname+"'";
+        var bookName = " SELECT [TenSach],Sach.[IDSach],[MoTa],[Gia],[NhaXB],[TacGia],[NgayXB],[NgayUp],[SoLuong],[Name]"+
+            "FROM Sach RIGHT JOIN LoaiSach ON Sach.IDSach = LoaiSach.IDSach "+
+            "INNER JOIN TheLoai ON LoaiSach.IDLoai = TheLoai.IDLoai WHERE TenSach LIKE N'"+bookname+"'";
         var date = new Date();
         
         new sql.Request().query(bookName, function(err, result){
             if(err) throw err;
             var dmy = result.recordset[0].NgayXB.split("-",3);
             
+            console.log( result.recordset);
             res.render('Suabook',{
                 data : result.recordset,
                 ddmmyy : dmy,
@@ -257,22 +260,22 @@ app.post('/Suabook', function(req, res, next){
         
         new sql.Request().query(UPDATE, function(err, result){
             if(err) throw err;
-            if(req.body.the_loai == 'Văn học'){
+            if(req.body.the_loai == 'Văn Học'){
                 req.body.the_loai = 1;
             }
-            if(req.body.the_loai == 'Kỹ năng sống'){
+            if(req.body.the_loai == 'Kỹ Năng Sống'){
                 req.body.the_loai = 5;
             }
-            if(req.body.the_loai == 'Tiểu thuyết'){
+            if(req.body.the_loai == 'Tiểu Thuyết'){
                 req.body.the_loai = 6;
             }
-            if(req.body.the_loai == 'Truyện tranh'){
+            if(req.body.the_loai == 'Truyện Tranh'){
                 req.body.the_loai = 2;
             }
-            if(req.body.the_loai == 'Văn hóa - Kinh tế'){
+            if(req.body.the_loai == 'Văn Hóa - Kinh Tế'){
                 req.body.the_loai = 3;
             }
-            if(req.body.the_loai == 'Kiến thức tổng hợp'){
+            if(req.body.the_loai == 'Kiến Thức Tổng Hợp'){
                 req.body.the_loai = 4;
             }
             
@@ -288,10 +291,18 @@ app.post('/Suabook', function(req, res, next){
 
 app.get('/deleteBook',function(req, res, next){
     sql.connect(config, function(err){
+        var deleteBook1 = "DELETE FROM LoaiSach WHERE IDSACH= '"+req.query.book+"'";
+        new sql.Request().query(deleteBook1, function(err, result){
+            if(err) throw err;
+        });
+        setTimeout(
+            () => {
+            },
+            4 * 1000
+          );
         var deleteBook = "DELETE FROM Sach WHERE IDSach = '"+req.query.book+"'";
         new sql.Request().query(deleteBook, function(err, result){
             if(err) throw err;
-            console.log("DELETE");
             res.redirect('/qlybook');
         });
     });
@@ -407,33 +418,46 @@ app.get('/qlyDon', function(req, res){
     }
     sql.connect(config, function(err){
         if(err) throw err;
+        var page = parseInt(req.query.page) || 1; // n
+        var perPage = 8; // x
+
+        var start = (page -1) * perPage;
+        var end = page * perPage;
         var select = "SELECT l.MaDonHang,IDND,TongTien,TrangThai,c.SoLuong AS SL,c.TenSach"+
             " FROM LichSuMua AS l INNER JOIN ("+ "SELECT SachDaMua.SoLuong, TenSach, MaDonHang FROM SachDaMua INNER JOIN Sach"+
             " ON SachDaMua.IDSach = Sach.IDSach"+") AS c \n"+
             " ON c.MaDonHang = l.MaDonHang";
         new sql.Request().query(select, function(err, result){
             if(err) throw err;
-            var dodai = result.recordset.length -1;
-            var page = parseInt(req.query.page) || 1;
+            var data = result.recordset;
+            data.sort(function(a,b){
+                if(a.MaDonHang < b.MaDonHang){
+                    return 1; 
+                }
+                
+                if(a.MaDonHang == b.MaDonHang){
+                    return 0;
+                }
+                
+                if(a.MaDonHang > b.MaDonHang){
+                    return -1;
+                }
+            });
             var pg;
-            var y=0;
-            for(x=0;x<=result.recordset.length -1;x++){
-                if(y<result.recordset[x].MaDonHang)
-                    y=result.recordset[x].MaDonHang;
+            if(data.length % perPage == 0){
+                pg = parseInt(data.length / perPage);
             }
-            if(result.recordset[dodai].MaDonHang % 8 == 0){
-                pg = parseInt(result.recordset[dodai].MaDonHang / 8);
+            if(data.length % perPage != 0){
+                pg = parseInt(data.length / perPage) + 1;
             }
-            if(result.recordset[dodai].MaDonHang % 8 != 0){
-                pg = parseInt(result.recordset[dodai].MaDonHang / 8) + 1;
-            }
-            
+            var dodai = data.length - 1 - (page - 1)*8;
+            if(data.length - (page-1)*8 > 8)
+                dodai = 7;
             res.render('qlyDonHang',{
-                DH : result.recordset,
+                DH : data.slice(start,end),
                 dodai : dodai,
                 slg : pg,
-                page : page,
-                max : y
+                page : page
             });
         });
     });
@@ -441,6 +465,28 @@ app.get('/qlyDon', function(req, res){
 
 app.get('/giohang', function(req, res, next){
     res.render('Book/GioHang');
+});
+
+app.get('/ht', function(req, res){
+    sql.connect(config, function(err){
+        if(err) throw err;
+        var book = req.query.book;
+     
+        var ktr = "SELECT TrangThai FROM LichSuMua WHERE MaDonHang = "+book;
+        var SQL;
+        new sql.Request().query(ktr, function(err, result){
+            if(result.recordset[0].TrangThai != 'Hoàn thành'){
+                SQL = "UPDATE LichSuMua SET TrangThai = N'Hoàn thành' WHERE MaDonHang = "+book;
+                
+                }else{
+                    SQL = "UPDATE LichSuMua SET TrangThai = N'Chờ Xử Lý' WHERE MaDonHang = "+book;
+                }
+                new sql.Request().query(SQL, function(err, result){
+                    if(err) throw err;
+                    res.redirect('/qlyDon');
+                    });
+            });
+        });
 });
 
 app.listen(port, function () {

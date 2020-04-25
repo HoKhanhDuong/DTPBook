@@ -256,7 +256,7 @@ br
                               | T&#x1ED5;ng ti&#x1EC1;n: 
                               strong
                                 bdi
-                                  span#span_sum= Gia.toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.") 
+                                  span#span_sum= (Gia+Ship).toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.") 
                                   | $
                                 br
                                 span.text-vat (&Dstrok;&atilde; bao g&#x1ED3;m VAT)
@@ -264,7 +264,7 @@ br
                             -for(var x = 0; x < Book.length; x++)
                                 input(type="hidden",name='book_id[]',value=Book[x].IDSach.toString())
                                 input(type="hidden",name='book_slg[]',value=Book[x].SoLuong.toString())
-                            input(type="hidden",name='book_gia',value='40.000',id='book_gia')
+                            input(type="hidden",name='book_gia',value=(Gia+Ship),id='book_gia')
                             input.btn-order(type='submit', value='Đặt hàng')
                       
 footer
@@ -310,6 +310,7 @@ footer
 script.
     function chon(x, Gia){
         var chon = document.getElementById(x).value;
+        Ship = 0;
         document.getElementById("span_tt").innerHTML = chon; 
         document.getElementById("span_sum").innerHTML = parseInt(chon.replace('.','')) + parseInt(Gia.toString());
         document.getElementById("span_sum").innerHTML = document.getElementById("span_sum").innerHTML.replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1.") ;

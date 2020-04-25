@@ -225,8 +225,8 @@ br
                             .fht-cell
                       tbody
                         -var y = 0;
-                        -var z = 0;
-                        -for(var x = 0 ; x <= dodai; x++)
+                        -var z = 0 ;
+                        -for(var x = 0  ; x <= dodai ; x++)
                             
                             tr(data-index=x.toString())
                             td(style='')= DH[x].MaDonHang.toString()
@@ -245,6 +245,14 @@ br
                                             ul= DH[z].SL.toString()
                             td(style='')=parseInt(DH[x].TongTien).toString()
                             td(style='')= DH[x].TrangThai.toString()
+                            if DH[x].TrangThai.toString() != "Hoàn thành"
+                              th.form-group(style='')
+                                a.btn(style='color:WHITE; background-color: GREEN',href='/ht?book='+DH[x].MaDonHang.toString()) Done
+                                  i.glyphicon.glyphicon-remove
+                            else
+                              th.form-group(style='')
+                                a.btn(style='color:WHITE; background-color: GRAY',href='/ht?book='+DH[x].MaDonHang.toString()) Back
+                                  i.glyphicon.glyphicon-remove
                             - x=y-1;
                   .fixed-table-pagination
             .clearfix

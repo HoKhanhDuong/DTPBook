@@ -335,15 +335,23 @@ router.post('/giohang',function(req, res, next){
             });
         }
         if(!req.body.baby){
-            
+            var sl = req.body.user_data.slg.length;
+            if(sl > 1){
             for(var x = 0; x < req.body.user_data.slg.length; x++){
                 var update = "UPDATE GioHang SET SoLuong = "+req.body.user_data.slg[x]+" WHERE IDND = "+req.cookies.UsersID+" AND IDSach = '"+req.body.user_data.idsach[x]+"'";
                 new sql.Request().query(update, function(err, result){
                     if(err) throw err;
                 });
             }
-            res.redirect('/users/diachi');
+           
+        }else{
+            var update = "UPDATE GioHang SET SoLuong = "+req.body.user_data.slg[0]+" WHERE IDND = "+req.cookies.UsersID+" AND IDSach = '"+req.body.user_data.idsach+"'";
+            new sql.Request().query(update, function(err, result){
+                if(err) throw err;
+            });
         }
+        res.redirect('/users/diachi');
+    }
     });
 });
 
@@ -365,17 +373,30 @@ router.get('/QlyDon',function(req, res, next){
             var data = result.recordset;
             var date = [];
 
-
             if(result.recordset.length == 0){
                 res.render('users/qlydonhang');
             }
+
+            data.sort(function(a,b){
+                if(a.MaDonHang > b.MaDonHang){
+                    return 1; 
+                }
+                
+                if(a.MaDonHang == b.MaDonHang){
+                    return 0;
+                }
+                
+                if(a.MaDonHang < b.MaDonHang){
+                    return -1;
+                }
+            });
 
             for(var x = 0; x < data.length; x++){
                 date[x] = data[x].NgayMua.getDate().toString() +'-'+(data[x].NgayMua.getMonth() +1).toString()+'-'+data[x].NgayMua.getFullYear().toString();
             }
             
             res.render('users/qlydonhang',{
-                DH : result.recordset,
+                DH : data,
                 date : date
             });
         });
@@ -453,10 +474,11 @@ router.get('/thanhtoan', function(req, res, next){
             for(var x = 0; x < result.recordset.length; x++){
                 Gia += parseInt(result.recordset[x].SoLuong) *parseFloat(result.recordset[x].Gia);
             }
-
+            var ship = 40000;
             res.render('users/thanhtoan2',{
                 Gia : Gia,
-                Book : result.recordset
+                Book : result.recordset,
+                Ship : ship 
             })
         });
     });
@@ -470,12 +492,18 @@ router.post('/thanhtoan',function(req, res){
                 
         var TongTien = req.body.book_gia;
         
+
         var LSMua = "INSERT INTO LichSuMua(IDND,TongTien,NgayMua) \nVALUES ("+req.cookies.UsersID+","+TongTien+",GETDATE())";
         new sql.Request().query(LSMua, function(err, result){
             if(err) throw err;
-        });
+        });   
+        setTimeout(
+            () => {     
+            },
+            4 * 1000
+          );
         
-        new sql.Request().query("SELECT MaDonHang FROM LichSuMua WHERE IDND = "+req.cookies.UsersID, function(err, result){
+        new sql.Request().query("SELECT MAX(MaDonHang) AS MaDonHang FROM LichSuMua WHERE IDND = "+req.cookies.UsersID, function(err, result){
             if(err) throw err;
             var IDSach = [];
             var SLg = [];
@@ -484,13 +512,20 @@ router.post('/thanhtoan',function(req, res){
                 SLg[x] = req.body.book_slg[x];
             }
             var MDH = result.recordset[0].MaDonHang;
-            
+            console.log(MDH);
             for(var x = 0; x < req.body.book_id.length; x++){
+                
                 new sql.Request().query("INSERT INTO SachDaMua VALUES('"+IDSach[x]+"',"+MDH+","+req.body.book_slg[x]+")", function(err, result){
                     if(err) throw err;
                     console.log("INSERT");
                 });
                 
+                setTimeout(
+                    () => {
+                    },
+                    4 * 1000
+                  );
+
                 new sql.Request().query("SELECT SoLuong FROM Sach WHERE IDSach='"+req.body.book_id[x]+"'", function(err, result){
                     if(err) throw err;
                     
